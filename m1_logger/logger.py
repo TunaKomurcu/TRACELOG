@@ -6,6 +6,7 @@ Kullanim: python logger.py -- KOMUT [args...]
 """
 import os, sys, signal, subprocess, threading, uuid, json, pathlib
 from datetime import datetime, timezone
+import forwarder
 
 
 def utc_now():
@@ -40,6 +41,10 @@ class NakedLogger:
                 self.log_file.write(line + "\n")
                 self.log_file.flush()
 
+    def _get_ts(self,line):
+        try: return line[1:line.index(chr(93))]
+        except Exception: return chr(34)+chr(34)
+
     def _format_line(self, stream: str, message: str):
         return f"[{utc_now()}] [{stream}] {message}"
 
@@ -55,6 +60,7 @@ class NakedLogger:
                     sys.stderr.write(formatted + "\n")
                     sys.stderr.flush()
                 self._write_log(formatted)
+                forwarder.forward_event(self.session_id,self._get_ts(formatted),stream_name,line)
         except ValueError:
             pass
 
