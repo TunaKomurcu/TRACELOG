@@ -1,0 +1,10 @@
+[2025-01-15T14:00:00.000Z] [stdout] App starting up...
+[2025-01-15T14:00:00.100Z] [stdout] Loading config from /etc/app/config.yml
+[2025-01-15T14:00:00.200Z] [stderr] DEBUG: Config parsed successfully
+[2025-01-15T14:00:01.000Z] [stdout] Database connection pool initialized (size=10)
+[2025-01-15T14:00:01.500Z] [stdout] HTTP server listening on :8080
+[2025-01-15T14:00:02.000Z] [stdout] GET /health 200 OK 3ms
+[2025-01-15T14:00:02.100Z] [stdout] GET /health 200 OK 2ms
+[2025-01-15T14:00:02.200Z] [stderr] WARNING: Memory usage above 70%
+[2025-01-15T14:00:03.000Z] [stdout] POST /api/events 201 Created 45ms
+[2025-01-15T14:00:03.500Z] [stdout] Shutdown signal received, draining connections...

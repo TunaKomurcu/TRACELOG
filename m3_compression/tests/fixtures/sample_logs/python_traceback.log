@@ -1,0 +1,10 @@
+[2025-01-15T14:01:00.000Z] [stdout] Running data migration task
+[2025-01-15T14:01:00.500Z] [stdout] Processing batch 1/10
+[2025-01-15T14:01:01.000Z] [stderr] Traceback (most recent call last):
+[2025-01-15T14:01:01.001Z] [stderr] File "migration.py", line 47, in process_batch
+[2025-01-15T14:01:01.002Z] [stderr] result = db.execute(query, params)
+[2025-01-15T14:01:01.003Z] [stderr] File "db.py", line 123, in execute
+[2025-01-15T14:01:01.004Z] [stderr] cursor.execute(sql, args)
+[2025-01-15T14:01:01.005Z] [stderr] sqlite3.OperationalError: no such table: users_v2
+[2025-01-15T14:01:01.100Z] [stderr] ERROR: Migration failed, rolling back
+[2025-01-15T14:01:01.200Z] [stdout] Rollback complete

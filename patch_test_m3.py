@@ -1,0 +1,11 @@
+import pathlib
+p = pathlib.Path(r"C:\Users\t.komurcu\sazabi\m3_compression\tests\test_m3.py")
+s = p.read_text("utf-8")
+s = s.replace("ANTHROPIC_API_KEY", "GOOGLE_API_KEY")
+s = s.replace("compressor._call_claude", "compressor._call_gemini")
+s = s.replace(chr(34)+"sk-test-key"+chr(34), chr(34)+"AIza-test-key"+chr(34))
+s = s.replace("TestPipelineWithMockedClaude", "TestPipelineWithMockedGemini")
+s = s.replace("mocked Claude", "mocked Gemini")
+s = s.replace("mock the Claude API", "mock the Gemini API")
+p.write_text(s, "utf-8")
+print("test_m3.py patched, GOOGLE_API_KEY refs:", s.count("GOOGLE_API_KEY"))
