@@ -6,7 +6,11 @@ Kullanim: python logger.py -- KOMUT [args...]
 """
 import os, sys, signal, subprocess, threading, uuid, json, pathlib
 from datetime import datetime, timezone
+from dotenv import load_dotenv
+from pathlib import Path
 import forwarder
+
+load_dotenv(Path(__file__).parent / ".env")
 
 
 def utc_now():
@@ -94,6 +98,9 @@ class NakedLogger:
         duration = (finished_dt - started_dt).total_seconds()
         end_meta = json.dumps({"finished_at": finished_at, "exit_code": self.exit_code, "duration_seconds": round(duration, 3)})
         self._write_log(f"[META:END] {end_meta}")
+        # Forwarder thread'lerinin HTTP isteklerini tamamlamasi icin kisa bir bekleme ekle.
+        import time
+        time.sleep(0.5)
         self.log_file.close()
         return self.exit_code
 

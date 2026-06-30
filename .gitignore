@@ -1,6 +1,14 @@
 # Environment files with secrets
+m1_logger/.env
+m2_storage/.env
+m3_compression/.env
+m4_memory/.env
+m5_sandbox/.env
+m6_slack/.env
+
 .env
 **/.env
+
 
 # Python
 __pycache__/

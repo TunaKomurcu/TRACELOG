@@ -2,8 +2,6 @@
 Run: pytest tests/test_m4.py -v
 """
 import sys, os, pathlib, uuid, pytest
-M4_DIR = pathlib.Path(__file__).parent.parent
-sys.path.insert(0, str(M4_DIR))
 from fastapi.testclient import TestClient
 
 
@@ -11,10 +9,31 @@ from fastapi.testclient import TestClient
 def mem_db(tmp_path, monkeypatch):
     db_file = str(tmp_path / "test_memory.db")
     monkeypatch.setenv("MEMORY_DB_PATH", db_file)
-    import importlib, db as db_mod, memory as mem_mod, api as api_mod
-    importlib.reload(db_mod); importlib.reload(mem_mod); importlib.reload(api_mod)
+    # Save original sys.path and clean competing paths
+    original_path = sys.path.copy()
+    m4_dir = str(pathlib.Path(__file__).parent.parent)
+    # Remove competing module paths
+    sys.path = [p for p in sys.path if not any(x in p for x in ["m1_logger","m2_storage","m3_compression","m5_sandbox","m6_slack"])]
+    if m4_dir not in sys.path:
+        sys.path.insert(0, m4_dir)
+    # Clean stale module references before reimporting
+    import importlib
+    for mod_key in list(sys.modules.keys()):
+        if mod_key in ('db', 'memory', 'api', 'git_tracker') or mod_key.startswith(('m4_memory.',)):
+            del sys.modules[mod_key]
+    # Import fresh modules in correct order
+    import db as db_mod
+    importlib.reload(db_mod)
+    import memory as mem_mod
+    importlib.reload(mem_mod)
+    # Import api after db/memory are ready
+    import api as api_mod
+    importlib.reload(api_mod)
     db_mod.init_db()
-    return db_mod, mem_mod, api_mod
+    result = (db_mod, mem_mod, api_mod)
+    yield result
+    # Restore sys.path after test
+    sys.path = original_path
 
 
 @pytest.fixture
@@ -181,14 +200,13 @@ class TestGitTracker:
 
 
 class TestPersistence:
-    def test_data_survives_reload(self, tmp_path, monkeypatch):
-        db_file = str(tmp_path / "persist_mem.db")
-        monkeypatch.setenv("MEMORY_DB_PATH", db_file)
-        import importlib, db as db_mod
-        importlib.reload(db_mod); db_mod.init_db()
+    def test_data_survives_reload(self, mem_db):
+        """Data survives module reload (simulating restart)."""
+        db_mod, _, _ = mem_db
         aid = str(uuid.uuid4())
         db_mod.insert_step(aid, 1, "bash", "echo hi", "printed hi")
-        # Simulate restart
+        # Simulate restart: reload module (new connections, same file)
+        import importlib
         importlib.reload(db_mod)
         steps = db_mod.get_agent_steps(aid)
         assert len(steps) == 1 and steps[0]["action_detail"] == "echo hi"

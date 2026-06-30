@@ -98,12 +98,12 @@ class TestFallback:
 
 
 class TestPipelineFallback:
-    """Tests for pipeline without API key (fallback path)."""
+    """Tests for pipeline when Ollama is unavailable (fallback path)."""
 
-    def test_no_api_key_uses_fallback(self):
-        """Acceptance criterion 3: no API key -> graceful fallback."""
-        import pipeline
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": ""}, clear=False):
+    def test_ollama_unavailable_uses_fallback(self):
+        """Acceptance criterion 3: Ollama unavailable -> graceful fallback."""
+        import pipeline, compressor
+        with patch.object(compressor, '_ollama_available', return_value=False):
             lines = load_fixture("normal_run.log")
             result = pipeline.run(lines, session_id="test-session-1")
             assert result.used_llm is False
@@ -113,8 +113,8 @@ class TestPipelineFallback:
             assert d["_meta"]["used_llm"] is False
 
     def test_pipeline_returns_required_fields(self):
-        import pipeline
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": ""}, clear=False):
+        import pipeline, compressor
+        with patch.object(compressor, '_ollama_available', return_value=False):
             lines = load_fixture("python_traceback.log")
             result = pipeline.run(lines)
             s = result.summary
@@ -122,8 +122,8 @@ class TestPipelineFallback:
                 assert field in s, f"Missing field: {field}"
 
     def test_pipeline_filter_stats_in_output(self):
-        import pipeline
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": ""}, clear=False):
+        import pipeline, compressor
+        with patch.object(compressor, '_ollama_available', return_value=False):
             lines = load_fixture("large_1000_lines.log")
             result = pipeline.run(lines, session_id="perf-test")
             d = result.to_dict()
@@ -131,8 +131,8 @@ class TestPipelineFallback:
             assert "kept" in d["_meta"]["filter_stats"]
 
 
-class TestPipelineWithMockedGemini:
-    """Tests that mock the Gemini API to verify LLM path without real key."""
+class TestPipelineWithMockedOllama:
+    """Tests that mock the Ollama API to verify LLM path without real endpoint."""
 
     _MOCK_RESPONSE = {
         "summary": "Application processed 1000 requests. One connection timeout detected. Memory usage elevated.",
@@ -151,32 +151,36 @@ class TestPipelineWithMockedGemini:
         """Acceptance criterion 1: LLM path returns structured JSON."""
         import pipeline, compressor
         mock_usage = self._make_mock_usage()
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "AIza-test-key"}, clear=False):
-            with patch("compressor._call_gemini") as mock_call:
-                ur = compressor.UsageRecord(session_id="t1", input_tokens=2500, output_tokens=180)
-                ur.calculate_cost()
-                mock_call.return_value = (self._MOCK_RESPONSE, ur)
-                lines = load_fixture("large_1000_lines.log")
-                result = pipeline.run(lines, session_id="t1")
-                assert result.used_llm is True
-                assert result.summary["summary"]
-                assert "Application" in result.summary["summary"]
+        with patch.dict(os.environ, {"OLLAMA_URL": "http://localhost:11434"}, clear=False):
+            with patch("compressor._ollama_available") as mock_avail:
+                with patch("compressor._call_ollama") as mock_call:
+                    mock_avail.return_value = True
+                    ur = compressor.UsageRecord(session_id="t1", input_tokens=2500, output_tokens=180)
+                    ur.calculate_cost()
+                    mock_call.return_value = (self._MOCK_RESPONSE, ur)
+                    lines = load_fixture("large_1000_lines.log")
+                    result = pipeline.run(lines, session_id="t1")
+                    assert result.used_llm is True
+                    assert result.summary["summary"]
+                    assert "Application" in result.summary["summary"]
 
     def test_token_cost_logged(self):
         """Acceptance criterion 4: token cost is recorded."""
         import pipeline, compressor
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "AIza-test-key"}, clear=False):
-            with patch("compressor._call_gemini") as mock_call:
-                ur = compressor.UsageRecord(session_id="t2", input_tokens=3000, output_tokens=200)
-                ur.calculate_cost()
-                mock_call.return_value = (self._MOCK_RESPONSE, ur)
-                lines = load_fixture("large_1000_lines.log")
-                result = pipeline.run(lines, session_id="t2")
-                assert result.usage is not None
-                assert result.usage.input_tokens == 3000
-                assert result.usage.cost_usd > 0
-                d = result.to_dict()
-                assert d["_meta"]["tokens"]["cost_usd"] > 0
+        with patch.dict(os.environ, {"OLLAMA_URL": "http://localhost:11434"}, clear=False):
+            with patch("compressor._ollama_available") as mock_avail:
+                with patch("compressor._call_ollama") as mock_call:
+                    mock_avail.return_value = True
+                    ur = compressor.UsageRecord(session_id="t2", input_tokens=3000, output_tokens=200)
+                    ur.calculate_cost()
+                    mock_call.return_value = (self._MOCK_RESPONSE, ur)
+                    lines = load_fixture("large_1000_lines.log")
+                    result = pipeline.run(lines, session_id="t2")
+                    assert result.usage is not None
+                    assert result.usage.input_tokens == 3000
+                    assert result.usage.cost_usd == 0.0  # Ollama is local, no cost
+                    d = result.to_dict()
+                    assert d["_meta"]["tokens"]["cost_usd"] == 0.0
 
 
 class TestTracebackRootCause:
@@ -199,30 +203,34 @@ class TestTracebackRootCause:
             "anomalies": [],
             "root_cause_hint": "sqlite3.OperationalError: no such table: users_v2 - run pending migrations.",
         }
-        with patch.dict(os.environ, {"GOOGLE_API_KEY": "AIza-test-key"}, clear=False):
-            with patch("compressor._call_gemini") as mock_call:
-                ur = compressor.UsageRecord(session_id="tb", input_tokens=500, output_tokens=100)
-                ur.calculate_cost()
-                mock_call.return_value = (mock_resp, ur)
-                lines = load_fixture("python_traceback.log")
-                result = pipeline.run(lines, session_id="tb")
-                hint = result.summary["root_cause_hint"].lower()
-                assert "sqlite3" in hint or "no such table" in hint or "migration" in hint
+        with patch.dict(os.environ, {"OLLAMA_URL": "http://localhost:11434"}, clear=False):
+            with patch("compressor._ollama_available") as mock_avail:
+                with patch("compressor._call_ollama") as mock_call:
+                    mock_avail.return_value = True
+                    ur = compressor.UsageRecord(session_id="tb", input_tokens=500, output_tokens=100)
+                    ur.calculate_cost()
+                    mock_call.return_value = (mock_resp, ur)
+                    lines = load_fixture("python_traceback.log")
+                    result = pipeline.run(lines, session_id="tb")
+                    hint = result.summary["root_cause_hint"].lower()
+                    assert "sqlite3" in hint or "no such table" in hint or "migration" in hint
 
 
-class TestRateLimit:
-    """Rate limiter unit tests."""
+class TestOllamaHelpers:
+    """Ollama helper tests."""
 
-    def test_rate_limiter_tracks_calls(self):
+    def test_ollama_available_check(self):
         import compressor
-        rl = compressor.RateLimiter(max_calls=5)
-        for _ in range(5):
-            rl.acquire()
-        assert len(rl._calls) == 5
+        with patch("httpx.Client") as mock_client:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_client.return_value.__enter__.return_value.get.return_value = mock_response
+            result = compressor._ollama_available()
+            assert result is True
 
-    def test_usage_record_cost_calculation(self):
+    def test_usage_record_cost_calculation_ollama(self):
         import compressor
         ur = compressor.UsageRecord(session_id="x", input_tokens=1_000_000, output_tokens=1_000_000)
         ur.calculate_cost()
-        # 1M input @ $0.075 + 1M output @ $0.30 = $0.375 (Gemini 2.0 Flash Lite)
-        assert abs(ur.cost_usd - 0.375) < 0.001
+        # Ollama is local, no per-token cost
+        assert abs(ur.cost_usd - 0.0) < 0.001

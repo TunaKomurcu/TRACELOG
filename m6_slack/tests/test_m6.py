@@ -1,9 +1,11 @@
 """Sazabi M6 - Test Suite"""
-import sys,os,pathlib,pytest
-from unittest.mock import patch,MagicMock
-M6_DIR=pathlib.Path(__file__).parent.parent
-sys.path.insert(0,str(M6_DIR))
-import blocks,services,app as app_module
+import sys, os, pathlib, pytest
+from unittest.mock import MagicMock, patch
+from fastapi.testclient import TestClient
+
+M6_DIR = pathlib.Path(__file__).parent.parent
+sys.path.insert(0, str(M6_DIR))
+import blocks, services, app as app_module, bot as bot_module, webhook_handler as webhook_module
 
 
 class TestBlocks:
@@ -84,15 +86,118 @@ class TestServicesUnit:
 
 class TestResponseTime:
     def test_status_under_3s(self):
-        import time; say=MagicMock()
-        with patch("services.health_check_all",return_value={"M2":{"status":"ok"}}):
-            t0=time.perf_counter(); app_module._cmd_status(say); dur=time.perf_counter()-t0
-            assert dur<3.0
+        import time; say = MagicMock()
+        with patch("services.health_check_all", return_value={"M2": {"status": "ok"}}):
+            t0 = time.perf_counter(); app_module._cmd_status(say); dur = time.perf_counter() - t0
+            assert dur < 3.0
     def test_run_under_3s(self):
-        import time; say=MagicMock()
-        mr={"sandbox_id":"x","command":"x","exit_code":0,"stdout":"2","stderr":"","duration_ms":5,"status":"completed"}
-        with patch("services.run_sandbox",return_value=mr):
-            t0=time.perf_counter(); app_module._cmd_run(say,"python -c pass"); dur=time.perf_counter()-t0
-            assert dur<3.0
+        import time; say = MagicMock()
+        mr = {"sandbox_id": "x", "command": "x", "exit_code": 0, "stdout": "2", "stderr": "", "duration_ms": 5, "status": "completed"}
+        with patch("services.run_sandbox", return_value=mr):
+            t0 = time.perf_counter(); app_module._cmd_run(say, "python -c pass"); dur = time.perf_counter() - t0
+            assert dur < 3.0
+
+
+class TestBotCommands:
+    def test_status_command(self):
+        ack = MagicMock()
+        say = MagicMock()
+
+        class FakeResponse:
+            def __init__(self, data):
+                self._data = data
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return self._data
+
+        side_effects = [
+            FakeResponse({"status": "ok", "events": [1, 2]}),
+            FakeResponse({"status": "ok"}),
+            FakeResponse({"status": "ok"}),
+        ]
+        with patch.object(bot_module.httpx, "get", side_effect=side_effects):
+            bot_module.handle_sazabi_command(ack, {"text": "status", "channel_id": "C123"}, say)
+
+        ack.assert_called_once()
+        say.assert_called_once()
+        blocks = say.call_args[1]["blocks"]
+        assert any("M2 Storage" in str(block) for block in blocks)
+        assert any("M4 Memory" in str(block) for block in blocks)
+        assert any("M5 Sandbox" in str(block) for block in blocks)
+        assert any("events" in str(block) for block in blocks)
+
+    def test_run_command_async(self):
+        ack = MagicMock()
+        say = MagicMock()
+        command = {"text": "run echo hello", "channel_id": "C123"}
+
+        def fake_thread_init(self, target, args=(), daemon=False):
+            self._target = target
+            self._args = args
+            self._daemon = daemon
+        def fake_thread_start(self):
+            self._target(*self._args)
+
+        def fake_thread_constructor(target, args=(), daemon=False):
+            class FakeThread:
+                def __init__(self, target, args=(), daemon=False):
+                    self._target = target
+                    self._args = args
+                    self.daemon = daemon
+                def start(self):
+                    self._target(*self._args)
+            return FakeThread(target, args, daemon)
+
+        with patch.object(bot_module.app.client, "chat_postMessage", return_value={"ts": "123"}) as post_mock, \
+             patch.object(bot_module.app.client, "chat_update", return_value=None) as update_mock, \
+             patch.object(bot_module, "_post_json", return_value={"ok": True, "data": {"exit_code": 0, "stdout": "hello", "stderr": ""}}), \
+             patch.object(bot_module, "threading", new=type("T", (), {"Thread": fake_thread_constructor})):
+            bot_module.handle_sazabi_command(ack, command, say)
+
+        post_mock.assert_called_once()
+        update_mock.assert_called_once()
+        assert not say.called
+
+    def test_logs_no_session(self):
+        ack = MagicMock()
+        say = MagicMock()
+        with patch.object(bot_module, "_get_json", return_value={"ok": True, "data": [{"session_id": "s1", "last_event_at": "2025-01-01T00:00:00Z"}]}) as get_json:
+            bot_module.handle_sazabi_command(ack, {"text": "logs", "channel_id": "C123"}, say)
+
+        get_json.assert_called_once()
+        say.assert_called_once()
+        blocks = say.call_args[1]["blocks"]
+        assert any("Recent Sessions" in str(block) for block in blocks)
+        assert any("s1" in str(block) for block in blocks)
+
+    def test_alerts_empty(self):
+        ack = MagicMock()
+        say = MagicMock()
+        with patch.object(bot_module, "_get_json", return_value={"ok": True, "data": []}):
+            bot_module.handle_sazabi_command(ack, {"text": "alerts", "channel_id": "C123"}, say)
+
+        say.assert_called_once()
+        blocks = say.call_args[1]["blocks"]
+        assert any("Son 1 saatte kritik hata yok" in str(block) for block in blocks)
+
+
+class TestWebhookHandler:
+    def test_webhook_handler(self):
+        client = TestClient(webhook_module.app)
+        payload = {
+            "session_id": "s1",
+            "command": "echo hi",
+            "exit_code": 0,
+            "stdout": "hi",
+            "stderr": "",
+            "finished_at": "2025-01-01T00:00:00Z"
+        }
+        with patch.object(webhook_module.client, "chat_postMessage", return_value={"ok": True}) as chat_post:
+            response = client.post("/webhook/sandbox-result", json=payload)
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+        chat_post.assert_called_once()
 
 

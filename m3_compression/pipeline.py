@@ -36,14 +36,14 @@ def run(lines: List[str], session_id: str = "") -> CompressionResult:
     """
     Full pipeline:
      1. Pre-filter (dedup + DEBUG removal + byte cap)
-     2. Try Gemini API
-     3. Fallback to rule-based if no API key or API error
+     2. Try Ollama LLM
+     3. Fallback to rule-based if Ollama unavailable or error
     """
     # Step 1: filter
     fres = log_filter.pre_filter(lines)
     logger.info(f"Filter: {fres.stats()}")
 
-    # Step 2: try Gemini LLM
+    # Step 2: try Ollama LLM
     try:
         result, usage = compressor.compress(fres.kept, session_id)
         if result:
@@ -54,7 +54,7 @@ def run(lines: List[str], session_id: str = "") -> CompressionResult:
                 usage=usage,
             )
     except Exception as e:
-        logger.warning(f"Gemini compression failed, using fallback: {e}")
+        logger.warning(f"Ollama compression failed, using fallback: {e}")
 
     # Step 3: fallback
     fb = fallback.rule_based_summary(fres.kept)

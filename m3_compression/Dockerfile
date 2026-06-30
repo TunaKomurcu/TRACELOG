@@ -7,8 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-VOLUME ["/data"]
+EXPOSE 8002
 
-EXPOSE 8765
-
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8765"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8002"]

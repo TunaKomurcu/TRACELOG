@@ -1,5 +1,5 @@
 """Sazabi M1+M2 - HTTP forwarder to storage service"""
-import os, json, threading
+import os, json, threading, sys
 from urllib import request, error
 
 
@@ -13,8 +13,8 @@ def _post(url: str, payload: dict) -> None:
     try:
         with request.urlopen(req, timeout=2):
             pass
-    except Exception:
-        pass # best-effort, never block logger
+    except Exception as exc:
+        print(f"Forwarder error: {exc}", file=sys.stderr)
 
 
 def forward_event(session_id: str, timestamp: str, stream: str,

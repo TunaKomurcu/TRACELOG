@@ -1,17 +1,18 @@
-"""Sazabi M3 - Google Gemini API compressor with rate limiting, retry, cost tracking."""
+"""Sazabi M3 - Ollama compressor with retry, cost tracking for local LLM."""
 import os, json, time, threading, logging, re
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
+import httpx
 
 logger = logging.getLogger("sazabi.m3.compressor")
 
-MODEL = "gemini-2.0-flash-lite"
-MAX_CALLS_PER_MINUTE = 10
+MODEL = "qwen2.5:14b"
 MAX_RETRIES = 3
 BASE_BACKOFF = 1.0
-# Gemini 2.0 Flash Lite pricing (per million tokens)
-COST_PER_1M_INPUT = 0.075 # USD
-COST_PER_1M_OUTPUT = 0.30 # USD
+TIMEOUT_SECONDS = 180  # Large model, local CPU/GPU can be slow
+# Ollama is local, no per-token cost tracking (but keep structure for compatibility)
+COST_PER_1M_INPUT = 0.0
+COST_PER_1M_OUTPUT = 0.0
 
 SYSTEM_PROMPT = (
     "Sen bir DevOps asistanisin. Sana verilen log satirlarini analiz et. SADECE JSON dondurmeli."
@@ -35,73 +36,73 @@ class UsageRecord:
         return self.cost_usd
 
 
-class RateLimiter:
-    """Token bucket: max N calls per 60s window."""
-    def __init__(self, max_calls: int = MAX_CALLS_PER_MINUTE):
-        self.max_calls = max_calls
-        self._calls: List[float] = []
-        self._lock = threading.Lock()
-
-    def acquire(self) -> None:
-        with self._lock:
-            now = time.monotonic()
-            self._calls = [t for t in self._calls if now - t < 60]
-            if len(self._calls) >= self.max_calls:
-                sleep_for = 60 - (now - self._calls[0]) + 0.05
-                logger.info(f"Rate limit reached, sleeping {sleep_for:.1f}s")
-                time.sleep(max(0, sleep_for))
-                now = time.monotonic()
-                self._calls = [t for t in self._calls if now - t < 60]
-            self._calls.append(now)
+def _ollama_available() -> bool:
+    """Check if Ollama is reachable at /api/tags endpoint."""
+    try:
+        url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+        with httpx.Client(timeout=3.0) as client:
+            r = client.get(f"{url}/api/tags")
+            return r.status_code == 200
+    except Exception:
+        return False
 
 
-_rate_limiter = RateLimiter()
-
-
-def _call_gemini(api_key: str, log_text: str) -> tuple[Dict[str, Any], UsageRecord]:
-    """Call Gemini API with rate limiting + exponential backoff retry."""
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    client = genai.GenerativeModel(
-        model_name=MODEL,
-        system_instruction=SYSTEM_PROMPT,
-        generation_config={"response_mime_type": "application/json"},
-    )
+def _call_ollama(ollama_url: str, model: str, log_text: str) -> tuple[Dict[str, Any], UsageRecord]:
+    """Call Ollama /v1/chat/completions endpoint (OpenAI-compatible) with retry."""
     usage = UsageRecord(session_id="")
     last_err: Optional[Exception] = None
 
     for attempt in range(MAX_RETRIES):
         try:
-            _rate_limiter.acquire()
-            resp = client.generate_content(log_text)
-            # Token counts (Gemini returns usage_metadata)
-            meta = getattr(resp, "usage_metadata", None)
-            if meta:
-                usage.input_tokens = getattr(meta, "prompt_token_count", 0) or 0
-                usage.output_tokens = getattr(meta, "candidates_token_count", 0) or 0
-            usage.calculate_cost()
-            raw = resp.text.strip()
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": log_text},
+                ],
+                "temperature": 0.3,
+                "response_format": {"type": "json_object"},
+            }
+            
+            with httpx.Client(timeout=TIMEOUT_SECONDS) as client:
+                resp = client.post(f"{ollama_url}/v1/chat/completions", json=payload)
+                resp.raise_for_status()
+                
+            data = resp.json()
+            raw = data["choices"][0]["message"]["content"].strip()
+            
+            # Extract token counts from usage field if present
+            if "usage" in data:
+                usage.input_tokens = data["usage"].get("prompt_tokens", 0)
+                usage.output_tokens = data["usage"].get("completion_tokens", 0)
+            
             # Strip markdown fences if present
             if raw.startswith("```"):
                 raw = re.sub(r"^```[a-z]*\n?", "", raw)
                 raw = re.sub(r"\n?```$", "", raw)
+            
+            usage.calculate_cost()
             return json.loads(raw), usage
         except Exception as e:
             last_err = e
             wait = BASE_BACKOFF * (2 ** attempt)
-            logger.warning(f"Gemini attempt {attempt+1} failed: {e}. Retry in {wait}s")
+            logger.warning(f"Ollama attempt {attempt+1} failed: {e}. Retry in {wait}s")
             time.sleep(wait)
 
-    raise RuntimeError(f"Gemini API failed after {MAX_RETRIES} attempts: {last_err}") from last_err
+    raise RuntimeError(f"Ollama API failed after {MAX_RETRIES} attempts: {last_err}") from last_err
 
 
 def compress(log_lines: List[str], session_id: str = "") -> tuple[Dict[str, Any], Optional[UsageRecord]]:
-    """Main entry: call Gemini if API key available, else return empty dict."""
-    api_key = os.getenv("GOOGLE_API_KEY", "")
-    if not api_key:
+    """Main entry: call Ollama if available, else return empty dict."""
+    if not _ollama_available():
+        logger.warning("Ollama not available, falling back to empty result")
         return {}, None
+    
+    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    model = os.getenv("SAZABI_LLM_MODEL", MODEL)
     log_text = chr(10).join(log_lines)
-    result, usage = _call_gemini(api_key, log_text)
+    
+    result, usage = _call_ollama(ollama_url, model, log_text)
     usage.session_id = session_id
-    logger.info(f"Gemini used {usage.input_tokens}in/{usage.output_tokens}out tokens, ${usage.cost_usd:.6f}")
+    logger.info(f"Ollama used {usage.input_tokens}in/{usage.output_tokens}out tokens, ${usage.cost_usd:.6f}")
     return result, usage

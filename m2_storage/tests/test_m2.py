@@ -3,10 +3,6 @@ Run: pytest tests/test_m2.py -v
 """
 import os, sys, json, time, uuid, pathlib, tempfile, pytest
 
-# Make m2_storage importable
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-os.environ.setdefault("DB_PATH", "") # overridden per test
-
 from fastapi.testclient import TestClient
 
 
@@ -15,13 +11,30 @@ def tmp_db(tmp_path, monkeypatch):
     """Each test gets its own temp SQLite file."""
     db_file = str(tmp_path / "test.db")
     monkeypatch.setenv("DB_PATH", db_file)
-    # Re-import config + db with patched env
-    import importlib, config, db, app as app_module
+    # Save original sys.path and clean competing paths
+    original_path = sys.path.copy()
+    m2_dir = str(pathlib.Path(__file__).parent.parent)
+    # Remove competing module paths
+    sys.path = [p for p in sys.path if not any(x in p for x in ["m1_logger","m3_compression","m4_memory","m5_sandbox","m6_slack"])]
+    if m2_dir not in sys.path:
+        sys.path.insert(0, m2_dir)
+    # Clean stale module references before reimporting
+    import importlib
+    for mod_key in list(sys.modules.keys()):
+        if mod_key in ('app', 'db', 'config') or mod_key.startswith(('m2_storage.',)):
+            del sys.modules[mod_key]
+    # Import fresh modules
+    import config, db
     importlib.reload(config)
     importlib.reload(db)
+    # Import app after config/db are ready
+    import app as app_module
     importlib.reload(app_module)
     db.init_db()
-    return db_file, app_module.app
+    result = (db_file, app_module.app)
+    yield result
+    # Restore sys.path after test
+    sys.path = original_path
 
 
 @pytest.fixture(scope="function")
@@ -155,16 +168,13 @@ class TestPerformance:
 class TestPersistence:
     """Kabul kriteri 4: restart ta veri kaybolmuyor (volume simulation)."""
 
-    def test_data_survives_db_reconnect(self, tmp_path, monkeypatch):
-        db_file = str(tmp_path / "persist.db")
-        monkeypatch.setenv("DB_PATH", db_file)
+    def test_data_survives_db_reconnect(self, tmp_db, monkeypatch):
+        db_file, _ = tmp_db
         import importlib, config, db as db_mod
-        importlib.reload(config)
-        importlib.reload(db_mod)
-        db_mod.init_db()
         sid = str(uuid.uuid4())
         db_mod.insert_event(sid, "2025-01-15T14:23:01.000Z", "stdout", "persist_test", "agent")
         # Simulate restart: reload module (new connections, same file)
+        importlib.reload(config)
         importlib.reload(db_mod)
         rows = db_mod.query_events(sid)
         assert len(rows) == 1
