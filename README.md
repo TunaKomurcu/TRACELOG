@@ -107,11 +107,11 @@ python app.py
 
 Once the bot is running, use these commands in Slack:
 
-- `/sazabi status` - Check health of all services
-- `/sazabi run <command>` - Execute code in sandbox
-- `/sazabi logs <session_id>` - Get compressed log summary
-- `/sazabi memory <agent_id>` - View agent timeline
-- `/sazabi alerts` - View recent critical alerts
+- `/tracelog status` - Check health of all services
+- `/tracelog run <command>` - Execute code in sandbox
+- `/tracelog logs <session_id>` - Get compressed log summary
+- `/tracelog memory <agent_id>` - View agent timeline
+- `/tracelog alerts` - View recent critical alerts
 
 ## Testing
 

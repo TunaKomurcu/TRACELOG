@@ -1,4 +1,4 @@
-"""Sazabi M3 - Rule-based pre-filter for log compression."""
+"""Tracelog M3 - Rule-based pre-filter for log compression."""
 import re
 from dataclasses import dataclass, field
 from typing import List

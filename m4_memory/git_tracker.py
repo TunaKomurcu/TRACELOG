@@ -1,4 +1,4 @@
-"""Sazabi M4 - Git integration: diff --stat and HEAD hash."""
+"""Tracelog M4 - Git integration: diff --stat and HEAD hash."""
 import subprocess, os, pathlib
 from typing import Optional, Tuple
 

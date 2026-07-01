@@ -1,4 +1,4 @@
-"""Sazabi M5 - FastAPI sandbox service."""
+"""Tracelog M5 - FastAPI sandbox service."""
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Sazabi Sandbox Service", version="5.0.0", lifespan=lifespan)
+app = FastAPI(title="Tracelog Sandbox Service", version="5.0.0", lifespan=lifespan)
 
 
 @app.get("/health")

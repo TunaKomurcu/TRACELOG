@@ -1,10 +1,10 @@
-"""Sazabi M3 - Ollama compressor with retry, cost tracking for local LLM."""
+"""Tracelog M3 - Ollama compressor with retry, cost tracking for local LLM."""
 import os, json, time, threading, logging, re
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 import httpx
 
-logger = logging.getLogger("sazabi.m3.compressor")
+logger = logging.getLogger("tracelog.m3.compressor")
 
 MODEL = "qwen2.5:14b"
 MAX_RETRIES = 3

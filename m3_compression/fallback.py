@@ -1,4 +1,4 @@
-"""Sazabi M3 - Rule-based fallback summarizer (no API key needed)."""
+"""Tracelog M3 - Rule-based fallback summarizer (no API key needed)."""
 import re
 from typing import List, Dict, Any
 

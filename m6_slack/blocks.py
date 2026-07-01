@@ -1,4 +1,4 @@
-"""Sazabi M6 - Slack Block Kit message builders."""
+"""Tracelog M6 - Slack Block Kit message builders."""
 from typing import List, Dict, Any
 
 
@@ -19,7 +19,7 @@ def error_block(msg: str) -> List[Dict]:
 
 
 def status_blocks(health: Dict[str, Any]) -> List[Dict]:
-    blocks = [_header(":mag: Sazabi System Status")]
+    blocks = [_header(":mag: Tracelog System Status")]
     for name, info in health.items():
         st = info.get("status", "unknown")
         emoji = ":white_check_mark:" if st == "ok" else ":red_circle:"

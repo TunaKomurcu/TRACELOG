@@ -1,4 +1,4 @@
-"""Sazabi M2 - Database layer"""
+"""Tracelog M2 - Database layer"""
 import sqlite3, pathlib
 from contextlib import contextmanager
 from typing import Optional

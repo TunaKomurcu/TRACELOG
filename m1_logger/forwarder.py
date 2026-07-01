@@ -1,4 +1,4 @@
-"""Sazabi M1+M2 - HTTP forwarder to storage service"""
+"""Tracelog M1+M2 - HTTP forwarder to storage service"""
 import os, json, threading, sys
 from urllib import request, error
 

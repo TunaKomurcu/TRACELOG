@@ -1,4 +1,4 @@
-"""Sazabi M5 - Security layer: whitelist, path validation, command parsing."""
+"""Tracelog M5 - Security layer: whitelist, path validation, command parsing."""
 import re, pathlib, shlex, os
 from typing import List, Tuple
 

@@ -1,10 +1,10 @@
-"""Sazabi M6 - Backend service clients."""
+"""Tracelog M6 - Backend service clients."""
 import sys, os, json, pathlib, logging
 from typing import Dict, Any, Optional, List
 from urllib import request as urllib_req, error as urllib_err
 from config import cfg
 
-logger = logging.getLogger("sazabi.m6.services")
+logger = logging.getLogger("tracelog.m6.services")
 
 
 def _get(url: str, timeout: int = None) -> Dict[str, Any]:

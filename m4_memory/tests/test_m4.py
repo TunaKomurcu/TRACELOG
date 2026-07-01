@@ -1,4 +1,4 @@
-"""Sazabi M4 - Test Suite
+"""Tracelog M4 - Test Suite
 Run: pytest tests/test_m4.py -v
 """
 import sys, os, pathlib, uuid, pytest
@@ -46,7 +46,7 @@ def client(mem_db):
 @pytest.fixture
 def m2_db(tmp_path):
     """Separate fixture to verify M2 db isolation."""
-    return str(tmp_path / "sazabi.db")
+    return str(tmp_path / "tracelog.db")
 
 
 class TestDBLayer:

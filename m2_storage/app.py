@@ -1,4 +1,4 @@
-"""Sazabi M2 - FastAPI log ingestion service"""
+"""Tracelog M2 - FastAPI log ingestion service"""
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List, Literal
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Sazabi Storage Service", version="2.0.0", lifespan=lifespan)
+app = FastAPI(title="Tracelog Storage Service", version="2.0.0", lifespan=lifespan)
 
 
 @app.get("/health")

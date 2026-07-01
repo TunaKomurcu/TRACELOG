@@ -1,26 +1,26 @@
-"""Sazabi M4 - memory.db layer (SEPARATE from M2 sazabi.db)."""
-import sqlite3, os, pathlib
-from contextlib import contextmanager
-from typing import Optional, List, Dict
-from datetime import datetime, timezone
-
-
-def utc_now() -> str:
-    now = datetime.now(timezone.utc)
-    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
-
-
-def get_memory_db_path() -> str:
-    if os.name != "nt":
-        return os.getenv("MEMORY_DB_PATH", "/data/memory.db")
-    d = str(pathlib.Path(os.environ.get("TEMP","C:/Temp")) / "sazabi" / "memory.db")
-    return os.getenv("MEMORY_DB_PATH", d)
-
-
-
-_DDL_STEPS = "CREATE TABLE IF NOT EXISTS agent_steps (id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id TEXT NOT NULL, step_number INTEGER NOT NULL, action_type TEXT CHECK(action_type IN ('file_write','bash','api_call','decision')), action_detail TEXT, result_summary TEXT, timestamp TEXT NOT NULL)"
-_DDL_SNAPS = "CREATE TABLE IF NOT EXISTS file_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, step_id INTEGER REFERENCES agent_steps(id), file_path TEXT NOT NULL, git_hash TEXT, diff_summary TEXT, timestamp TEXT NOT NULL)"
-_INDEXES = ["CREATE INDEX IF NOT EXISTS idx_m4a ON agent_steps(agent_id)", "CREATE INDEX IF NOT EXISTS idx_m4b ON file_snapshots(step_id)", "CREATE INDEX IF NOT EXISTS idx_m4c ON file_snapshots(file_path)"]
+"""Tracelog M4 - memory.db layer (SEPARATE from M2 tracelog.db)."""
+import sqlite3, os, pathlib
+from contextlib import contextmanager
+from typing import Optional, List, Dict
+from datetime import datetime, timezone
+
+
+def utc_now() -> str:
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
+
+
+def get_memory_db_path() -> str:
+    if os.name != "nt":
+        return os.getenv("MEMORY_DB_PATH", "/data/memory.db")
+    d = str(pathlib.Path(os.environ.get("TEMP","C:/Temp")) / "tracelog" / "memory.db")
+    return os.getenv("MEMORY_DB_PATH", d)
+
+
+
+_DDL_STEPS = "CREATE TABLE IF NOT EXISTS agent_steps (id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id TEXT NOT NULL, step_number INTEGER NOT NULL, action_type TEXT CHECK(action_type IN ('file_write','bash','api_call','decision')), action_detail TEXT, result_summary TEXT, timestamp TEXT NOT NULL)"
+_DDL_SNAPS = "CREATE TABLE IF NOT EXISTS file_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, step_id INTEGER REFERENCES agent_steps(id), file_path TEXT NOT NULL, git_hash TEXT, diff_summary TEXT, timestamp TEXT NOT NULL)"
+_INDEXES = ["CREATE INDEX IF NOT EXISTS idx_m4a ON agent_steps(agent_id)", "CREATE INDEX IF NOT EXISTS idx_m4b ON file_snapshots(step_id)", "CREATE INDEX IF NOT EXISTS idx_m4c ON file_snapshots(file_path)"]
 
 
 def init_db() -> None:

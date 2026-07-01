@@ -1,4 +1,4 @@
-"""Sazabi M5 - Sandbox runner: subprocess + timeout + resource limits."""
+"""Tracelog M5 - Sandbox runner: subprocess + timeout + resource limits."""
 import os, sys, time, uuid, shutil, subprocess, pathlib, threading
 from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
@@ -11,9 +11,9 @@ MAX_RAM_MB = int(os.getenv("SANDBOX_MAX_RAM_MB", "256"))
 
 def _get_sandbox_base() -> pathlib.Path:
     if os.name == "nt":
-        base = pathlib.Path(os.environ.get("TEMP", "C:/Temp")) / "sazabi_sandbox"
+        base = pathlib.Path(os.environ.get("TEMP", "C:/Temp")) / "tracelog_sandbox"
     else:
-        base = pathlib.Path("/tmp/sazabi_sandbox")
+        base = pathlib.Path("/tmp/tracelog_sandbox")
     base.mkdir(parents=True, exist_ok=True)
     return base
 

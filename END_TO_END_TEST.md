@@ -73,7 +73,7 @@ cp .env.example .env
 
 Edit `.env`:
 ```bash
-DB_PATH=/data/sazabi.db
+DB_PATH=/data/tracelog.db
 SERVICE_HOST=0.0.0.0
 SERVICE_PORT=8765
 LOG_LEVEL=info
@@ -137,7 +137,7 @@ Edit `.env`:
 ```bash
 SLACK_BOT_TOKEN=xoxb-your-bot-token-here
 SLACK_SIGNING_SECRET=your-signing-secret-here
-SLACK_ALERT_CHANNEL=#sazabi-alerts
+SLACK_ALERT_CHANNEL=#tracelog-alerts
 M2_URL=http://localhost:8765
 M4_URL=http://localhost:8766
 M5_URL=http://localhost:8767
@@ -148,7 +148,7 @@ HTTP_TIMEOUT=5
 
 1. Go to https://api.slack.com/apps
 2. Click "Create New App" → "From scratch"
-3. App Name: `Sazabi Bot`
+3. App Name: `Tracelog Bot`
 4. Workspace: Select your workspace
 5. **OAuth & Permissions**:
    - Scroll to "Scopes" → "Bot Token Scopes"
@@ -158,9 +158,9 @@ HTTP_TIMEOUT=5
    - Copy **Bot User OAuth Token** → `SLACK_BOT_TOKEN`
 7. **Slash Commands**:
    - Go to "Slash Commands" → "Create New Command"
-   - Command: `/sazabi`
+   - Command: `/tracelog`
    - Request URL: `https://your-domain.com/slack/events` (for Socket Mode, leave blank)
-   - Description: `Sazabi system control`
+   - Description: `Tracelog system control`
 8. **Basic Information**:
    - Scroll to "App Credentials"
    - Copy **Signing Secret** → `SLACK_SIGNING_SECRET`
@@ -178,7 +178,7 @@ cd m2_storage
 python -c "from db import init_db; init_db()"
 ```
 
-This creates `/data/sazabi.db` with required tables.
+This creates `/data/tracelog.db` with required tables.
 
 ### 3.2 M4 Memory Database
 
@@ -293,16 +293,16 @@ Expected response:
 
 ## Step 6: Slack Bot Testing
 
-### 6.1 Test `/sazabi status`
+### 6.1 Test `/tracelog status`
 
 In Slack workspace, type:
 ```
-/sazabi status
+/tracelog status
 ```
 
 Expected response:
 ```
-🔍 Sazabi System Status
+🔍 Tracelog System Status
 ✅ M2 Storage: ok
 ✅ M4 Memory: ok
 ✅ M5 Sandbox: ok
@@ -312,11 +312,11 @@ Expected response:
 
 **Acceptance Criteria**: All services show "ok" status.
 
-### 6.2 Test `/sazabi run`
+### 6.2 Test `/tracelog run`
 
 In Slack, type:
 ```
-/sazabi run python -c "print(1+1)"
+/tracelog run python -c "print(1+1)"
 ```
 
 Expected response:
@@ -333,11 +333,11 @@ stdout:
 
 **Acceptance Criteria**: Output shows "2".
 
-### 6.3 Test `/sazabi run` with Error
+### 6.3 Test `/tracelog run` with Error
 
 In Slack, type:
 ```
-/sazabi run python -c "1/0"
+/tracelog run python -c "1/0"
 ```
 
 Expected response:
@@ -352,19 +352,19 @@ ZeroDivisionError: division by zero
 ```
 ```
 
-### 6.4 Test `/sazabi run` without Argument
+### 6.4 Test `/tracelog run` without Argument
 
 In Slack, type:
 ```
-/sazabi run
+/tracelog run
 ```
 
 Expected response:
 ```
-❌ Error: Usage: /sazabi run <command>
+❌ Error: Usage: /tracelog run <command>
 ```
 
-### 6.5 Test `/sazabi memory`
+### 6.5 Test `/tracelog memory`
 
 First, create some agent activity (simulate agent run):
 ```bash
@@ -383,7 +383,7 @@ curl -X POST http://localhost:8765/events \
 
 In Slack, type:
 ```
-/sazabi memory test-agent-001
+/tracelog memory test-agent-001
 ```
 
 Expected response:
@@ -394,19 +394,19 @@ Agent: `test-agent-001` | Steps: 1
 Step 1 `bash`: ok
 ```
 
-### 6.6 Test `/sazabi memory` without Argument
+### 6.6 Test `/tracelog memory` without Argument
 
 In Slack, type:
 ```
-/sazabi memory
+/tracelog memory
 ```
 
 Expected response:
 ```
-❌ Error: Usage: /sazabi memory <agent_id>
+❌ Error: Usage: /tracelog memory <agent_id>
 ```
 
-### 6.7 Test `/sazabi logs`
+### 6.7 Test `/tracelog logs`
 
 First, create some logs:
 ```bash
@@ -424,7 +424,7 @@ curl -X POST http://localhost:8765/events \
 
 In Slack, type:
 ```
-/sazabi logs test-session-002
+/tracelog logs test-session-002
 ```
 
 Expected response:
@@ -434,23 +434,23 @@ Session: `test-session-002`
 No summary.
 ```
 
-### 6.8 Test `/sazabi logs` without Argument
+### 6.8 Test `/tracelog logs` without Argument
 
 In Slack, type:
 ```
-/sazabi logs
+/tracelog logs
 ```
 
 Expected response:
 ```
-❌ Error: Usage: /sazabi logs <session_id>
+❌ Error: Usage: /tracelog logs <session_id>
 ```
 
-### 6.9 Test `/sazabi alerts`
+### 6.9 Test `/tracelog alerts`
 
 In Slack, type:
 ```
-/sazabi alerts
+/tracelog alerts
 ```
 
 Expected response:
@@ -482,7 +482,7 @@ curl -X POST http://localhost:8765/events \
 ### 7.2 Trigger Alert Check
 
 The system automatically detects critical errors. To verify:
-- Check Slack channel `#sazabi-alerts` (or your configured channel)
+- Check Slack channel `#tracelog-alerts` (or your configured channel)
 - Should see a message like:
 ```
 🚨 CRITICAL ALERT
@@ -502,7 +502,7 @@ All Slack commands should respond within 3 seconds (Slack's timeout).
 
 Test with:
 ```
-/sazabi status
+/tracelog status
 ```
 
 Measure time from command send to response receipt.
@@ -629,7 +629,7 @@ Stop all services (Ctrl+C in each terminal).
 
 To remove databases:
 ```bash
-rm /data/sazabi.db
+rm /data/tracelog.db
 rm /data/memory.db
 ```
 
@@ -639,11 +639,11 @@ rm /data/memory.db
 
 ✅ All services start without errors
 ✅ All health checks return `{"status": "ok"}`
-✅ `/sazabi status` shows all services as "ok"
-✅ `/sazabi run python -c "print(1+1)"` returns "2"
-✅ `/sazabi memory <agent_id>` shows timeline
-✅ `/sazabi logs <session_id>` shows compressed summary
-✅ `/sazabi alerts` shows recent anomalies
+✅ `/tracelog status` shows all services as "ok"
+✅ `/tracelog run python -c "print(1+1)"` returns "2"
+✅ `/tracelog memory <agent_id>` shows timeline
+✅ `/tracelog logs <session_id>` shows compressed summary
+✅ `/tracelog alerts` shows recent anomalies
 ✅ Critical errors trigger Slack alerts
 ✅ All commands respond within 3 seconds
 ✅ All unit tests pass

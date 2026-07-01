@@ -1,62 +1,62 @@
-version: "3.8"
-
-services:
-  m2_storage:
-    build: ./m2_storage
-    container_name: sazabi_m2_storage
-    ports:
-      - "8765:8765"
-    env_file:
-      - ./m2_storage/.env
-    volumes:
-      - m2_data:/data
-    restart: unless-stopped
-    networks:
-      - sazabi_network
-
-  m4_memory:
-    build: ./m4_memory
-    container_name: sazabi_m4_memory
-    ports:
-      - "8766:8766"
-    env_file:
-      - ./m4_memory/.env
-    volumes:
-      - m4_data:/data
-    restart: unless-stopped
-    networks:
-      - sazabi_network
-
-  m5_sandbox:
-    build: ./m5_sandbox
-    container_name: sazabi_m5_sandbox
-    ports:
-      - "8767:8767"
-    env_file:
-      - ./m5_sandbox/.env
-    restart: unless-stopped
-    networks:
-      - sazabi_network
-
-  m6_slack:
-    build: ./m6_slack
-    container_name: sazabi_m6_slack
-    ports:
-      - "3000:3000"
-    env_file:
-      - ./m6_slack/.env
-    depends_on:
-      - m2_storage
-      - m4_memory
-      - m5_sandbox
-    restart: unless-stopped
-    networks:
-      - sazabi_network
-
-volumes:
-  m2_data:
-  m4_data:
-
-networks:
-  sazabi_network:
-    driver: bridge
+version: "3.8"
+
+services:
+  m2_storage:
+    build: ./m2_storage
+    container_name: tracelog_m2_storage
+    ports:
+      - "8765:8765"
+    env_file:
+      - ./m2_storage/.env
+    volumes:
+      - m2_data:/data
+    restart: unless-stopped
+    networks:
+      - tracelog_network
+
+  m4_memory:
+    build: ./m4_memory
+    container_name: tracelog_m4_memory
+    ports:
+      - "8766:8766"
+    env_file:
+      - ./m4_memory/.env
+    volumes:
+      - m4_data:/data
+    restart: unless-stopped
+    networks:
+      - tracelog_network
+
+  m5_sandbox:
+    build: ./m5_sandbox
+    container_name: tracelog_m5_sandbox
+    ports:
+      - "8767:8767"
+    env_file:
+      - ./m5_sandbox/.env
+    restart: unless-stopped
+    networks:
+      - tracelog_network
+
+  m6_slack:
+    build: ./m6_slack
+    container_name: tracelog_m6_slack
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./m6_slack/.env
+    depends_on:
+      - m2_storage
+      - m4_memory
+      - m5_sandbox
+    restart: unless-stopped
+    networks:
+      - tracelog_network
+
+volumes:
+  m2_data:
+  m4_data:
+
+networks:
+  tracelog_network:
+    driver: bridge

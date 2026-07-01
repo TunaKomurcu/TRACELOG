@@ -1,4 +1,4 @@
-﻿"""Sazabi M2 - Test Suite
+﻿"""Tracelog M2 - Test Suite
 Run: pytest tests/test_m2.py -v
 """
 import os, sys, json, time, uuid, pathlib, tempfile, pytest
