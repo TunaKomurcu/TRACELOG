@@ -162,12 +162,6 @@ Each module has its own specification:
 - `GET /health` - Health check
 - `POST /sandbox/run` - Execute code in sandbox
 
-## Security
-
-- API secrets in `.env` files (never commit)
-- Sandbox execution with timeout and resource limits
-- Slack bot token authentication
-- Input validation on all endpoints
 
 ## Performance
 
@@ -179,16 +173,6 @@ Each module has its own specification:
 ## License
 
 This project is licensed under the MIT License, which is free and permissive for personal, academic, and commercial use. See [LICENSE](LICENSE) for the full text.
-
-## Contributing
-
-Contributions are welcome. Please open an issue or pull request, keep changes focused, and ensure the relevant tests pass before submitting.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
-
-## Security
-
-If you discover a security issue, please report it privately through GitHub Security Advisories or by contacting the maintainers directly instead of opening a public issue. See [SECURITY.md](SECURITY.md) for details.
 
 ## Support
 
