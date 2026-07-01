@@ -14,21 +14,6 @@ services:
     networks:
       - sazabi_network
 
-  m3_compression:
-    build: ./m3_compression
-    container_name: sazabi_m3_compression
-    ports:
-      - "8002:8002"
-    env_file:
-      - ./m3_compression/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - m2_storage
-    restart: unless-stopped
-    networks:
-      - sazabi_network
-
   m4_memory:
     build: ./m4_memory
     container_name: sazabi_m4_memory
