@@ -1,14 +1,14 @@
-# SAZABI
+# TRACELOG
 
 AI Agent Trace Log Analysis System with Slack Integration
 
 ## Overview
 
-SAZABI is a distributed system for analyzing AI agent trace logs with real-time anomaly detection, compression, and Slack-based monitoring. It provides a complete observability stack for AI agent operations.
+TRACELOG is a distributed system for analyzing AI agent trace logs with real-time anomaly detection, compression, and Slack-based monitoring. It provides a complete observability stack for AI agent operations.
 
 ## Architecture
 
-SAZABI consists of 6 modular components:
+TRACELOG consists of 6 modular components:
 
 - **M1 Logger**: Structured logging library for agent operations
 - **M2 Storage**: HTTP API service for log storage (SQLite backend)
@@ -40,7 +40,7 @@ SAZABI consists of 6 modular components:
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd SAZABI
+cd TRACELOG
 
 # Install dependencies for each module
 cd m2_storage && pip install -r requirements.txt

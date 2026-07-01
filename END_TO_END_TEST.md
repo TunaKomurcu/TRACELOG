@@ -1,7 +1,7 @@
-# SAZABI - End-to-End Test Guide
+# TRACELOG - End-to-End Test Guide
 
 ## Overview
-SAZABI is a distributed system for AI agent trace log analysis with Slack integration. This guide walks through complete setup and testing from scratch.
+TRACELOG is a distributed system for AI agent trace log analysis with Slack integration. This guide walks through complete setup and testing from scratch.
 
 ## System Architecture
 - **M1 Logger**: Structured logging library
@@ -24,7 +24,7 @@ SAZABI is a distributed system for AI agent trace log analysis with Slack integr
 
 ```bash
 git clone <repository-url>
-cd SAZABI
+cd TRACELOG
 ```
 
 ---
@@ -577,22 +577,22 @@ curl -X POST http://localhost:8765/events \
 
 2. Execute code via Slack:
 ```
-/sazabi run python -c "print('Hello from SAZABI')"
+/tracelog run python -c "print('Hello from TRACELOG')"
 ```
 
 3. Check logs via Slack:
 ```
-/sazabi logs integration-test-001
+/tracelog logs integration-test-001
 ```
 
 4. Check memory via Slack:
 ```
-/sazabi memory integration-agent
+/tracelog memory integration-agent
 ```
 
 5. Check system status:
 ```
-/sazabi status
+/tracelog status
 ```
 
 **Acceptance Criteria**: All commands work, data flows correctly through M2 → M3 → M4 → M5 → M6.

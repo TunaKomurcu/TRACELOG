@@ -99,7 +99,7 @@ def compress(log_lines: List[str], session_id: str = "") -> tuple[Dict[str, Any]
         return {}, None
     
     ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    model = os.getenv("SAZABI_LLM_MODEL", MODEL)
+    model = os.getenv("TRACELOG_LLM_MODEL", MODEL)
     log_text = chr(10).join(log_lines)
     
     result, usage = _call_ollama(ollama_url, model, log_text)

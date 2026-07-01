@@ -6,7 +6,7 @@ import blocks
 import services
 import config as cfg
 
-logger = logging.getLogger("sazabi.m6.app")
+logger = logging.getLogger("tracelog.m6.app")
 
 
 def _cmd_status(say):
@@ -15,14 +15,14 @@ def _cmd_status(say):
 
 def _cmd_run(say, command_str):
     if not command_str:
-        say(blocks=blocks.error_block("Usage: /sazabi run <command>"))
+        say(blocks=blocks.error_block("Usage: /tracelog run <command>"))
         return
     say(blocks=blocks.run_blocks(services.run_sandbox(command_str)))
 
 
 def _cmd_logs(say, session_id):
     if not session_id:
-        say(blocks=blocks.error_block("Usage: /sazabi logs <session_id>"))
+        say(blocks=blocks.error_block("Usage: /tracelog logs <session_id>"))
         return
     evts = services.get_session_logs(session_id)
     if not evts:
@@ -34,7 +34,7 @@ def _cmd_logs(say, session_id):
 
 def _cmd_memory(say, agent_id):
     if not agent_id:
-        say(blocks=blocks.error_block("Usage: /sazabi memory <agent_id>"))
+        say(blocks=blocks.error_block("Usage: /tracelog memory <agent_id>"))
         return
     tl = services.get_agent_timeline(agent_id)
     if "error" in tl:
@@ -64,8 +64,8 @@ def get_test_app():
 
 
 def register_handlers(bolt_app):
-    @bolt_app.command("/sazabi")
-    def sazabi_command(ack, command, say):
+    @bolt_app.command("/tracelog")
+    def tracelog_command(ack, command, say):
             ack()
             text = (command.get("text") or "").strip()
             parts = text.split(None, 1)

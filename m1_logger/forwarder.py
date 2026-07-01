@@ -3,7 +3,7 @@ import os, json, threading, sys
 from urllib import request, error
 
 
-STORAGE_URL = os.getenv("SAZABI_STORAGE_URL", "")
+STORAGE_URL = os.getenv("TRACELOG_STORAGE_URL", "")
 
 
 def _post(url: str, payload: dict) -> None:
