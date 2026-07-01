@@ -9,6 +9,26 @@ m6_slack/.env
 .env
 **/.env
 
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Demo and test workspaces
+demo/
+test_agent_workspace/
+
+# Temporary scripts (fix, gen, patch, check)
+fix_*.py
+gen_*.py
+patch_*.py
+check_*.py
+
+# Other temporary files
+*.txt
+!requirements.txt
+docker
+
 
 # Python
 __pycache__/
